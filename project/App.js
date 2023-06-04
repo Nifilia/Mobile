@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Signin from "./src/screens/auth/Signin";
-import SignUp from "./src/screens/auth/Signup";
+import Signup from "./src/screens/auth/Signup";
 import Splash from "./src/screens/auth/Splash";
 import Home from "./src/screens/app/Home";
 import Favorites from "./src/screens/app/Favorites";
