@@ -1,40 +1,81 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import AuthHeader from "../../../components/AuthHeader";
 import Input from "../../../components/Input";
 import Checkbox from "../../../components/Checkbox";
 import Button from "../../../components/Button";
 import Separator from "../../../components/Separator";
 import GoogleLogin from "../../../components/GoogleLogin";
-import { View, Text } from "react-native";
+import axios from "axios";
+import { View, Text, Alert } from "react-native";
 import { styles } from "./styles";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { UserContext } from "../../../../App";
 
 const Signup = ({ navigation }) => {
     const [checked, setChecked] = useState(false);
+    const [values, setValues] = useState({})
+    const {user, setUser} = useContext(UserContext)
 
     const onBack = () => {
         navigation.goBack()
     }
 
-    const onSignin = () => {
+    const onSignIn = () => {
         navigation.navigate('Signin')
     }
+
+    const onChange = (key, value) => {
+        setValues(v => ({...v, [key]: value}))
+    }
+
+    const onSubmit = () => {
+        if(!values?.fullName || !values?.email || !values?.password) {
+            Alert.alert('All fields are required!')
+            return;
+        }
+        if(!checked) {
+            Alert.alert('Please agree to the terms and conditions!')
+            return;
+        }
+        axios.post('http://192.168.18.4/api/user/register', values)
+        .then(response => {
+            console.log('signup => ', response)
+            const {email, password} = values;
+            axios.post('http://192.168.18.4/api/user/login', values)
+            .then(async (response) => {
+                console.log(response?.data?.accessToken)
+                const accessToken = response?.data?.accessToken;
+                setUser({accessToken})
+                if (response?.data?.token) {
+                    await AsyncStorage.setItem('auth_token', `${response?.data?.token}`);
+                }
+            })
+            .catch(error => {
+                console.log('login error => ', error.response.data)
+            })
+        })
+        .catch(error => {
+            console.log('signup error => ', error)
+        })
+    }
+
+
 
     return (
         <SafeAreaView>
             <View style={styles.container}>
                 <AuthHeader title="Sign up"/>
-                <Input label="Name" placeholder="John Doe"/>
-                <Input label="Email" placeholder={"example@gmail.com"}/>
-                <Input isPassword label="Password" placeholder="********"/>
+                <Input value={values.fullName} onChangeText={(v) => onChange('fullName', v)} label="Name" placeholder="John Doe"/>
+                <Input value={values.email} onChangeText={(v) => onChange('email', v)} label="Email" placeholder={"example@gmail.com"}/>
+                <Input value={values.password} onChangeText={(v) => onChange('password', v)} isPassword label="Password" placeholder="********"/>
                 <View style={styles.agreeRow}>
                     <Checkbox checked={checked} onCheck={setChecked}/>
                     <Text style={styles.agreeText}>I agree to the<Text style={styles.agreeTextBold}>Terms of Service</Text>And<Text style={styles.agreeTextBold}>Privacy Policy</Text></Text>
                 </View>
-                <Button style={styles.button} onPress={() => console.log('Clicked')} title="Sign Up"/>
+                <Button onPress={onSubmit} style={styles.button} title="Sign Up" />
                 <Seperator text="Or Sign Up With"/>
                 <GoogleLogin/>
-                <Text style={styles.footerText}>Already have an account?<Text onPress={onSignin} style={styles.footerLink}>Sign In</Text></Text>
+                <Text style={styles.footerText}>Already have an account? <Text onPress={onSignIn} style={styles.footerLink}>Sign In</Text></Text>
             </View>
         </SafeAreaView>
     )
